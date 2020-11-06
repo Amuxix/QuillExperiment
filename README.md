@@ -5,6 +5,7 @@
 First run:
 1. Start database container.
 2. Run schema migration.
+3. DB code generation.
 
 ### Start database container
 
@@ -16,4 +17,10 @@ docker-compose up
 
 ```bash
 sbt db/flywayMigrate
+```
+
+### DB code generation
+
+```bash
+sbt jooqCodegen
 ```

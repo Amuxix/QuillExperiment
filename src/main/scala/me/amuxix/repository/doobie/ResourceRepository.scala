@@ -5,13 +5,15 @@ import java.time.ZoneId
 import java.util.TimeZone
 
 import cats.effect.{ContextShift, IO}
-import doobie.Meta
+import doobie.{Meta, _}
 import doobie.implicits._
+import doobie.postgres.implicits._
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
 import me.amuxix.model.{Resource, ResourceLocale}
-import doobie.postgres._
-import doobie.postgres.implicits._
+import org.jooq.{DSLContext, Query, SQLDialect}
+import org.jooq.conf.{Settings, StatementType}
+import org.jooq.impl.DSL
 
 import scala.concurrent.ExecutionContext
 
@@ -24,8 +26,17 @@ trait ResourceRepository {
 object ResourceRepository {
   // IntelliJ IDEA removes this one:
   import doobie.implicits.javasql._
+  import me.amuxix.db.schema.test.tables.Resources.RESOURCES
+  import me.amuxix.db.schema.test.enums.{ResourceLocale => DBResourceLocale}
 
   def apply()(implicit ec:ExecutionContext):ResourceRepository = new Impl(IO.contextShift(ec))
+
+  // This could be made a global constant, because it is immutable.
+  private val query:DSLContext = {
+    val settings = new Settings
+    settings.setStatementType(StatementType.STATIC_STATEMENT)
+    DSL.using(SQLDialect.POSTGRES, settings)
+  }
 
   private implicit val resourceLocaleMeta:Meta[ResourceLocale] =
     pgEnumStringOpt("resource_locale", ResourceLocale.apply, _.identifier)
@@ -39,13 +50,19 @@ object ResourceRepository {
     private val xa:Transactor.Aux[IO,Unit] =
       Transactor.fromDriverManager[IO]("org.postgresql.Driver", "jdbc:postgresql:test", "test", "test")
 
-    override def delete(key:String):IO[Int] =
-      sql"""delete from resources where "key" = $key""".update.run.transact(xa)
+    private def update(query:Query):IO[Int] = Fragment.const(query.getSQL()).update.run.transact(xa)
 
-    override def delete(key:String, locale:ResourceLocale):IO[Int] =
-    sql"""delete from resources where "key" = $key and locale = $locale""".update.run.transact(xa)
+    override def delete(key:String):IO[Int] = update(
+      query.deleteFrom(RESOURCES).where(RESOURCES.KEY.eq(key))
+    )
 
-    override def get(key:String, locale:ResourceLocale):IO[Option[Resource]] =
+    override def delete(key:String, locale:ResourceLocale):IO[Int] = update(
+      query.deleteFrom(RESOURCES).where(RESOURCES.KEY.eq(key).and(RESOURCES.LOCALE.eq(toDB(locale))))
+    )
+
+    override def get(key:String, locale:ResourceLocale):IO[Option[Resource]] = {
+      query.select(RESOURCES.KEY,RESOURCES.LOCALE, RESOURCES.BODY, RESOURCES.CREATED_AT)
+        .where(RESOURCES.KEY.eq(key).and(RESOURCES.LOCALE.in(toDB(locale), toDB(ResourceLocale.Default))))
       sql"""
         select "key", locale, body, created_at from resources
         where "key" = $key and (
@@ -57,6 +74,7 @@ object ResourceRepository {
         .transact(xa)
         .map(results => results.find(_._2 == locale).orElse(results.headOption))
         .map(_.map(untupled))
+    }
 
     override def insert(resources:Resource*):IO[Int] = {
       val sql = """insert into resources ("key", locale, body, created_at, modified_at) values (?, ?, ?, ?, ?)"""
@@ -75,5 +93,11 @@ object ResourceRepository {
   private def tupledWithModifiedAt(r:Resource):(String, ResourceLocale, String, Timestamp, Timestamp) = {
     val timestamp = Timestamp.from(r.createdAt.toInstant)
     (r.key, r.locale, r.body, timestamp, timestamp)
+  }
+
+  private def toDB(locale:ResourceLocale):DBResourceLocale = locale match {
+    case ResourceLocale.Default => DBResourceLocale.default_
+    case ResourceLocale.English => DBResourceLocale.en
+    case ResourceLocale.German => DBResourceLocale.de
   }
 }
