@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<configuration xmlns="http://www.jooq.org/xsd/jooq-codegen-3.13.0.xsd">
+  <jdbc>
+    <url>jdbc:postgresql:test</url>
+    <user>test</user>
+    <password>test</password>
+  </jdbc>
+  <generator>
+    <database>
+      <name>org.jooq.meta.postgres.PostgresDatabase</name>
+      <excludes>information_schema.* | pg_catalog.* | public.*</excludes>
+    </database>
+    <target>
+      <packageName>me.amuxix.db.schema</packageName>
+      <directory>${sourceManaged}</directory>
+    </target>
+  </generator>
+</configuration>

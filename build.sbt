@@ -4,6 +4,11 @@ version := "0.1"
 
 scalaVersion := "2.13.3"
 
+enablePlugins(JooqCodegenPlugin)
+
+jooqCodegenConfig := file("src/main/resources/db/jooq-codegen.xml")
+jooqVersion := "3.14.1"
+
 val versionDoobie = "0.9.2"
 val versionPostgresDriver = "42.2.18.jre7"
 
@@ -11,7 +16,9 @@ libraryDependencies ++= Seq(
   "io.getquill" %% "quill-core" % "3.5.3",
   "io.getquill" %% "quill-async-postgres" % "3.5.3",
   "io.getquill" %% "quill-jdbc" % "3.5.3",
+  "org.jooq" %% "jooq-scala" % jooqVersion.value,
   "org.postgresql" % "postgresql" % versionPostgresDriver,
+  "org.postgresql" % "postgresql" % versionPostgresDriver % JooqCodegen,
   "org.tpolecat" %% "doobie-core" % versionDoobie,
   "org.tpolecat" %% "doobie-postgres" % versionDoobie,
   "org.typelevel" %% "cats-effect" % "2.2.0",
