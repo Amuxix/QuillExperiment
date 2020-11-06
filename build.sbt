@@ -4,6 +4,7 @@ version := "0.1"
 
 scalaVersion := "2.13.3"
 
+val versionDoobie = "0.9.2"
 val versionPostgresDriver = "42.2.18.jre7"
 
 libraryDependencies ++= Seq(
@@ -11,6 +12,8 @@ libraryDependencies ++= Seq(
   "io.getquill" %% "quill-async-postgres" % "3.5.3",
   "io.getquill" %% "quill-jdbc" % "3.5.3",
   "org.postgresql" % "postgresql" % versionPostgresDriver,
+  "org.tpolecat" %% "doobie-core" % versionDoobie,
+  "org.tpolecat" %% "doobie-postgres" % versionDoobie,
   "org.typelevel" %% "cats-effect" % "2.2.0",
 )
 
