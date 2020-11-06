@@ -23,3 +23,8 @@
 * Seems to be too generic at times. ("Could not find instance of Foldable for Seq")
 * The documentation is strange at times. (Selecting and updating found on the TOC, but not deleting?)
   * After googling, turns out that deleting is just a special case of updating in Doobie.
+
+## Doobie with jOOQ
+
+* Using jOOQ for query generation only works quite easily.
+* No use of prepared statements due to static parameter insertion.
